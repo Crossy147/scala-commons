@@ -1,8 +1,8 @@
 # Typesafe RPC & proxy framework
 
-`commons-shared` module contains a set of tools for implementing type-safe remote interfaces. It is not bound to any particular transport protocol or serialization method. Its purpose is to provide type-safety layer over "raw" transport layer. This is primarily provided by automatic translation between "real" RPC interfaces (represented by regular, typesafe Scala traits) and "raw" RPC interfaces where an invocation is already represented in a format suitable for sending over a network or other low-level transport mechanism that accepts raw bytes or strings.
+The `commons-shared` module contains a set of tools for implementing type-safe remote interfaces. It is not bound to any particular transport protocol or serialization method. Its purpose is to provide a type-safety layer over "raw" transport layer. This is primarily provided by an automatic translation between "real" RPC interfaces (represented by regular, typesafe Scala traits) and "raw" RPC interfaces where an invocation is already represented in a format suitable for sending over a network or other low-level transport mechanism that accepts raw bytes or strings.
 
-RPC framework is cross-compiled for JVM and JS, which makes it especially useful for implementing communication layer between client and server in ScalaJS applications.
+RPC framework is cross-compiled for JVM and JS, which makes it especially useful for implementing the communication layer between a client and a server in ScalaJS applications.
 
 ## Table of Contents
 
@@ -25,7 +25,7 @@ RPC framework is cross-compiled for JVM and JS, which makes it especially useful
 
 ## RPC traits
 
-Suppose you have a client-server application where client wants to invoke remote operations on the server. The notions of "client" and "server" are abstract here, since the framework does not assume any particular transport method. This set of operations must be represented using a trait (or abstract class) annotated as `@RPC`:
+Suppose you have a client-server application where the client wants to invoke remote operations on the server. The notions of "client" and "server" are abstract here, since the framework does not assume any particular transport method. This set of operations must be represented using a trait (or abstract class) annotated as `@RPC`:
 
 ```scala
 import com.avsystem.commons.rpc.RPC
@@ -36,12 +36,12 @@ import com.avsystem.commons.rpc.RPC
 
 The RPC framework interprets all **abstract** methods (`def`s) declared in this interface as remote methods. There are three types of remote methods allowed:
 * procedures: methods with `Unit` return type are interpreted as "fire and forget" operations, i.e. the server doesn't return any result or success acknowledgement
-* functions: methods with `Future[T]` return type are interpreted as functions that return some result. Result must always be wrapped in a `Future`, because the communication layer between client and server may be asynchronous. The server-side implementation of a function may also be asynchronous.
+* functions: methods with `Future[T]` return type are interpreted as functions that return some result. The result must always be wrapped in a `Future`, because the communication layer between the client and the server may be asynchronous. The server-side implementation of a function may also be asynchronous.
 * getters: methods that return another RPC interface (trait or abstract class annotated as `@RPC`). This way one RPC interface may aggregate many other sub-interfaces.
 
 Every remote method may take parameters, including implicit ones. However, every parameter type must be "serializable" so that parameter values can be sent over network in raw form. What "serializable" means depends on the serialization library chosen. We will elaborate on that in the next section.
 
-Remote methods can **not** have type parameters (generics).
+Remote methods **cannot** have type parameters (generics).
 
 Example of an RPC trait:
 
@@ -60,19 +60,19 @@ case class User(id: String, login: String, birthYear: Int)
 
 #### Overloaded remote methods
 
-It is also possible to overload RPC methods. However, in order to do it, one must annotate all the overloads with `@RPCName` annotation to give each overloaded variant unique name.
+It is also possible to overload RPC methods. However, in order to do it, one must annotate all the overloads with `@RPCName` annotation to give each overloaded variant a unique name.
 
 #### Non-abstract members
 
-RPC interface traits may also contain non-abstract methods and fields. These will be simply ignored by the RPC framework, which means they will be invoked locally. This may be either on client or server:
-* When local method is called by the client (on the proxy implementation), the method is invoked on the client. However, that method may by itself call other, possibly remote methods, so you can't assume that a non-abstract method doesn't involve comunication with the server.
-* When local method is called by the server (on the actual implementation), the method is invoked on the server. In particular, a server-side implementation of a remote method may use a local method.
+RPC interface traits may also contain non-abstract methods and fields. These will be simply ignored by the RPC framework, which means they will be invoked locally. This may be either on the client or the server:
+* When a local method is called by the client (on the proxy implementation), the method is invoked on the client. However, that method may by itself call other, possibly remote methods, so you can't assume that a non-abstract method doesn't involve comunication with the server.
+* When a local method is called by the server (on the actual implementation), the method is invoked on the server. In particular, a server-side implementation of a remote method may use a local method.
 
 RPC traits are a part of code shared between the client and the server. For example, in a ScalaJS application that contacts a Scala(JVM) server, RPC traits would most likely be [cross-compiled](https://www.scala-js.org/doc/project/cross-build.html). Server-side code is supposed to implement these interfaces while client-side code is supposed to use them through auto-generated proxies (described later in this documentation).
 
 ## Choosing a serialization mechanism
 
-RPC framework requires that every parameter of every RPC method and result type of every RPC function is serializable. What it means exactly is determined by serialization mechanism used. The framework assumes that serialization is typeclass-based.
+The RPC framework requires that every parameter of every RPC method and the result type of every RPC function is serializable. What it means exactly is determined by serialization mechanism used. The framework assumes that serialization is typeclass-based.
 An example of such mechanism is the [`GenCodec` framework](GenCodec.md) which is also a part of AVSystem commons. Another, external example of such serialization library is [µPickle](http://www.lihaoyi.com/upickle-pprint/upickle/) for JSON serialization.
 
 In typeclass-based serialization there usually is some typeclass, e.g. `Writer` for serializing and e.g. `Reader` for deserializing (`Writer` and `Reader` may be the same typeclass, e.g. `Codec`). Type `T` is serializable when there is an instance of typeclass `Writer` for type `T`, i.e. there is an implicit value of type `Writer[T]` available. Similarly, `T` is de-serializable when there's an implicit instance of `Reader` for it.
@@ -109,7 +109,7 @@ It is specifically recommended to implement `RPCFramework` as an `object`. This 
 
 ## RPC client implementation
 
-When client wants to call an RPC method, it needs an RPC proxy implementation, i.e. an implementation of RPC interface that will translate the calls into raw form (which includes serializing the parameters) that can be sent to the server (e.g. in an AJAX call).
+When the client wants to call an RPC method, it needs an RPC proxy implementation, i.e. an implementation of RPC interface that will translate calls into a raw form (which includes serializing the parameters) that can be sent to the server (e.g. in an AJAX call).
 
 ### Implementing the transport
 
@@ -206,7 +206,7 @@ val realRpc: Services = new AsRealRPC[Services] {
 
 ## RPC server implementation
 
-Now that we have a fully-functional RPC client, we also need the server-side to receive raw invocations sent by client-side `RawRPC` implementation, translate them into operations on actual RPC implementation and send back the result (for functions).
+Now that we have a fully-functional RPC client, we also need the server-side to receive raw invocations sent by client-side `RawRPC` implementation, translate them into operations on actual RPC implementation and send back a result (for functions).
 
 ### RPC implementation
 
@@ -227,7 +227,7 @@ On client side we had a `RawRPC` implemented by us that did the network operatio
 
 On the server side, we need to do exactly the opposite. We already have the real interface implemented, but we're going to be receiving raw RPC invocations from network and we need to somehow translate them into calls on the real interface.
 
-This guide is, again, detached from any particular transport method, so let's just assume we have some trait, `RequestHandler` which we need to implement and register into the underlying network layer. The handler will be notified every time a RPC invocation is received from the client.
+This guide is, again, detached from any particular transport method, so let's just assume we have some trait, `RequestHandler` which we need to implement and register into the underlying network layer. The handler will be notified every time some RPC invocation is received from the client.
 
 ```scala
 import SimpleRPCFramework._
@@ -254,7 +254,7 @@ object SimpleHandler extends RequestHandler {
 
 #### Type safety
 
-Just like for `AsRealRPC`, instances of `AsRawRPC` are macro-generated and perform thorough validation of RPC interfaces that should fail in compile-time if anything is invalid. Compilation error will be issued when:
+Just like for `AsRealRPC`, instances of `AsRawRPC` are macro-generated and perform thorough validation of RPC interfaces that should fail in compile-time if anything is invalid. A compilation error will be issued when:
 * some abstract method has wrong signature (takes type parameters or has wrong return type)
 * any of the RPC parameters is not de-serializable (no instance of `Reader` typeclass is found for its type)
 * any of the function results is not serializable (no instance of `Writer` typeclass is found for its type)
@@ -262,7 +262,7 @@ Just like for `AsRealRPC`, instances of `AsRawRPC` are macro-generated and perfo
 
 #### Internals
 
-For better understanding of what's going on in the raw-to-real translation, here's the simplified code of macro-generated `AsRawRPC[Services]` instance:
+For better understanding of what's going on in the raw-to-real translation, here's the simplified code of the macro-generated `AsRawRPC[Services]` instance:
 
 ```scala
 import SimpleRPCFramework._
@@ -297,16 +297,16 @@ val rawRpc: RawRPC = new AsRawRPC[Services] {
 
 ## RPC metadata
 
-When implementing network layer for transporting RPC invocations, it is often useful to have some more information about the RPC interface and its operations. For example, `RawRPC` implementation may be interested in names of the parameters or some annotations applied on them. Information like that is provided by `RPCMetadata` typeclass. Having an instance `RPCMetadata[T]` for RPC trait `T`, you can extract following metadata from it:
+When implementing network layer for transporting RPC invocations, it is often useful to have some more information about the RPC interface and its operations. For example, `RawRPC` implementation may be interested in names of the parameters or some annotations applied on them. Information like that is provided by the `RPCMetadata` typeclass. Having an instance `RPCMetadata[T]` for RPC trait `T`, you can extract following metadata from it:
 * name of the RPC trait (simple trait or class name)
 * annotations applied on the RPC trait, assuming they are a subclass of `MetadataAnnotation`
 * signature metadata for every RPC method, which includes:
  * RPC name - method name by default unless overridden with `@RPCName` annotation
- * annotations applied on RPC method, assuming they are a subclass of `MetadataAnnotation`
+ * annotations applied on the RPC method, assuming they are a subclass of `MetadataAnnotation`
  * metadata for every parameter, which includes:
    * parameter name
-    * annotations applied on RPC method parameter, assuming they are a subclass of `MetadataAnnotation`
- * for getters, `RPCMetadata` instance for RPC subinterface returned by the getter
+    * annotations applied on the RPC method parameter, assuming they are a subclass of `MetadataAnnotation`
+ * for getters, the `RPCMetadata` instance for RPC subinterface returned by the getter
  
 As you can see, `RPCMetadata` provides similar information to standard Java reflection. However, `RPCMetadata` has various advantages over it, the most important one being **platform independency** - metadata is available in both JVM and JS, in the same format.
 
@@ -314,7 +314,7 @@ Instances of `RPCMetadata` are automatically generated with macros, using compil
 
 ### Example
 
-Suppose some RPC methods need permission checking. We can express that an RPC method requires some permissions with an annotation:
+Suppose some RPC methods need permission checking. This can be expressed with an annotation:
 
 ```scala
 import com.avsystem.commons.rpc._
