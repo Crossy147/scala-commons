@@ -18,4 +18,19 @@ class SealedEnumTest extends FunSuite {
     import SomeEnum._
     assert(values.toSet == Set(First, Second, Third, Fourth))
   }
+
+  sealed abstract class SomeNamedEnum(val name: String) extends NamedEnum
+  object SomeNamedEnum extends NamedEnumCompanion[SomeNamedEnum] {
+    case object First extends SomeNamedEnum("p")
+    case object Second extends SomeNamedEnum("d")
+    case object Third extends SomeNamedEnum("t")
+    case object Fourth extends SomeNamedEnum("c")
+
+    val values: List[SomeNamedEnum] = caseObjects
+  }
+
+  test("named enum map by name test") {
+    import SomeNamedEnum._
+    assert(byName == Map("p" -> First, "d" -> Second, "t" -> Third, "c" -> Fourth))
+  }
 }
